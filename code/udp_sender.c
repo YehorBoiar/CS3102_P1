@@ -99,10 +99,12 @@ int main(int argc, char *argv[])
             double rtt_ms = (recv_ts.tv_sec - send_ts.tv_sec) * 1000.0 + 
                             (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
             printf("%u,%.3f,%d\n", counter, rtt_ms, r);
+            fflush(stdout);
         }
         else if (r == -2)
         {
-            ERROR("LOST (Timeout)");
+            printf("LOST (Timeout)\n");
+            fflush(stdout);
         }
         else
         {
