@@ -11,6 +11,9 @@ random uint8_t integers a specified host on specified port.
 #include <inttypes.h>
 #include <unistd.h>
 
+#include <poll.h>
+#include <time.h>
+#include <sys/select.h>
 #include "UdpSocket.h"
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
@@ -18,7 +21,22 @@ random uint8_t integers a specified host on specified port.
 
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 
-int readLine(int fd, UdpBuffer_t *buffer);
+int get_udp_response(UdpSocket_t *local,
+                     UdpSocket_t *remote,
+                     UdpBuffer_t *buffer,
+                     int timeout_ms)
+{
+    struct pollfd pfd;
+    pfd.fd = local->sd;
+    pfd.events = POLLIN;
+
+    int ready = poll(&pfd, 1, timeout_ms);
+
+    if (ready > 0)
+        return recvUdp(local, remote, buffer);
+
+    return -1;
+}
 
 int main(int argc, char *argv[])
 {
@@ -55,8 +73,11 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+    uint32_t counter = 0;
+
     while (1)
     {
+        struct timespec send_ts, recv_ts;
         buffer.bytes = bytes;
         buffer.n = G_SIZE;
 
@@ -64,9 +85,28 @@ int main(int argc, char *argv[])
         for (uint8_t i = 0; i < buffer.n; i++)
             buffer.bytes[i] = rand() % 127;
 
+        clock_gettime(CLOCK_MONOTONIC, &send_ts);
+
         if (sendUdp(local, remote, &buffer) != buffer.n)
             ERROR("sendUdp() problem");
 
+        int r = get_udp_response(local, remote, &buffer, 1);
+
+        if (r > 0)
+        {
+            clock_gettime(CLOCK_MONOTONIC, &recv_ts);
+
+            double rtt_ms = (recv_ts.tv_sec  - send_ts.tv_sec) * 1000.0
+              + (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
+
+            printf("%u,%.3f,%d\n", counter, rtt_ms, r);
+        }
+        else
+        {
+            ERROR("LOST");
+        }
+
+        counter++;
         sleep(1);
     }
 
