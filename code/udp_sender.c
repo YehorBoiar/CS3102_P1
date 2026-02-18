@@ -28,47 +28,51 @@ int get_udp_response(UdpSocket_t *local,
 
     if (ready > 0)
         return recvUdp(local, remote, buffer);
+    
+    if (ready == 0) return -2; // Timeout code
 
-    return -1;
+    return -1; // System error code
 }
 
 int main(int argc, char *argv[])
 {
+    srand(69);
+
     if (argc != 3)
     {
-        ERROR("usage: udp-sender <hostname> <local_port>\n\nhint: use 'id -u' or getuid(2) to get your port\n\nhint2: you can run `udp-sender <hostname> $(id -u)` to input your port automatically");
+        ERROR("usage: udp-sender <hostname> <local_port>\n\nhint: use 'id -u' or getuid(2) to get your port");
         exit(0);
     }
 
     char *hostname = argv[1];
     uint16_t local_port = (uint16_t)atoi(argv[2]);
 
-    srand(69);
-
-    UdpSocket_t *local, *remote;
+    UdpSocket_t *local = NULL, *remote = NULL;
     UdpBuffer_t buffer;
     uint8_t bytes[G_SIZE];
 
     if ((local = setupUdpSocket_t((char *)0, local_port)) == (UdpSocket_t *)0)
     {
         ERROR("local problem");
-        exit(0);
+        return 1;
     }
 
     if ((remote = setupUdpSocket_t(hostname, G_SRV_PORT)) == (UdpSocket_t *)0)
     {
         ERROR("remote hostname/port problem");
-        exit(0);
+        closeUdp(local);
+        return 1;
     }
 
     if (openUdp(local) < 0)
     {
         ERROR("openUdp() problem");
-        exit(0);
+        closeUdp(local);
+        closeUdp(remote);
+        return 1;
     }
 
     uint32_t counter = 0;
-
     struct timespec start_time, current_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     double elapsed = 0;
@@ -79,33 +83,35 @@ int main(int argc, char *argv[])
         buffer.bytes = bytes;
         buffer.n = G_SIZE;
 
-        // fill with nonsense data
-        for (uint8_t i = 0; i < buffer.n; i++)
-            buffer.bytes[i] = rand() % 127;
+        for (uint32_t i = 0; i < buffer.n; i++)
+            buffer.bytes[i] = (uint8_t)(rand() % 127);
 
         clock_gettime(CLOCK_MONOTONIC, &send_ts);
 
-        if (sendUdp(local, remote, &buffer) != buffer.n)
+        if (sendUdp(local, remote, &buffer) != (int)buffer.n)
             ERROR("sendUdp() problem");
 
         int r = get_udp_response(local, remote, &buffer, 1);
 
-        if (r > 0)
+        if (r >= 0) // packet is valid even if 0 bytes
         {
             clock_gettime(CLOCK_MONOTONIC, &recv_ts);
-
-            double rtt_ms = (recv_ts.tv_sec - send_ts.tv_sec) * 1000.0 + (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
-
+            double rtt_ms = (recv_ts.tv_sec - send_ts.tv_sec) * 1000.0 + 
+                            (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
             printf("%u,%.3f,%d\n", counter, rtt_ms, r);
+        }
+        else if (r == -2)
+        {
+            ERROR("LOST (Timeout)");
         }
         else
         {
-            ERROR("LOST");
+            ERROR("System Error in Poll/Recv");
         }
 
         clock_gettime(CLOCK_MONOTONIC, &current_time);
-        elapsed = (current_time.tv_sec - start_time.tv_sec) +
-                  (current_time.tv_nsec - start_time.tv_nsec) / 1e9;
+        elapsed = (double)(current_time.tv_sec - start_time.tv_sec) +
+                  (double)(current_time.tv_nsec - start_time.tv_nsec) / 1e9;
 
         counter++;
         sleep(1);
