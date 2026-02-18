@@ -1,3 +1,8 @@
+/**
+ * To collect data and put it into the data.csv do
+ * stdbuf -oL ./udp_sender klovia $(id -u) > ../data/data.csv
+ * (assuming you're at root)
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,7 +108,7 @@ int main(int argc, char *argv[])
         }
         else if (r == -2)
         {
-            printf("LOST (Timeout)\n");
+            printf("LOST (Timeout),,\n");
             fflush(stdout);
         }
         else
