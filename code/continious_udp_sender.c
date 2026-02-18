@@ -14,7 +14,7 @@ Checked February 2025, 2026 (sjm55)
 #include "UdpSocket.h"
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
-#define G_SIZE ((uint32_t)256)
+#define G_SIZE ((uint32_t)128)
 
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 
     UdpSocket_t *local, *remote;
     UdpBuffer_t buffer;
-    unsigned char bytes[G_SIZE];
+    uint8_t bytes[G_SIZE];
 
     if (argc != 2)
     {
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 
         // fill with nonsense data
         for (uint8_t i = 0; i < buffer.n; i++)
-            buffer.bytes[i] = rand() % 256;
+            buffer.bytes[i] = rand() % 127;
 
         if ((buffer.n > 0) && (sendUdp(local, remote, &buffer) != buffer.n))
             ERROR("sendUdp() problem");
