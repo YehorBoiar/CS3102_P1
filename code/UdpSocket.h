@@ -1,0 +1,48 @@
+/*
+  Wrapper API for UDP socket in C.
+
+  Saleem Bhatti <https://saleem.host.cs.st-andrews.ac.uk/>
+
+  Only handles IPv4 for now.
+
+  Jan2024, Jan2022, Jan2021, Jan2004, Nov2002
+  Checked February 2025, 2026 (sjm55)
+*/
+
+#ifndef __UdpSocket_h__
+#define __UdpSocket_h__
+
+#include <inttypes.h>
+#include <netinet/in.h>
+
+typedef struct UdpSocket_s {
+  int                sd;
+  struct sockaddr_in addr;
+} UdpSocket_t;
+
+typedef struct UdpBuffer_s {
+  uint16_t n;         /* number of bytes to send */
+  uint8_t *bytes;
+} UdpBuffer_t;
+
+UdpSocket_t *setupUdpSocket_t(const char *hostname, const uint16_t port);
+/* unicast */
+/* hostname == null, port == 0    local end-point, ephemeral port */
+/* hostname == null, port != 0    local end-point, designated port */
+/* hostname != null, port != 0    remote end-point */
+
+int openUdp(UdpSocket_t *udp);
+/* returns 0 and sets udp->sd if OK else returns -1 */
+
+int sendUdp(const UdpSocket_t *local, const UdpSocket_t *remote,
+  const UdpBuffer_t *buffer);
+/* returns number of bytes sent or -1 on error */
+
+int recvUdp(const UdpSocket_t *local, const UdpSocket_t *remote,
+  UdpBuffer_t *buffer);
+/* returns number of bytes sent or -1 on error */
+
+void closeUdp(UdpSocket_t *udp);
+/* if udp->sd != 0, then close(udp->sd) and free(udp) */
+
+#endif /* __UdpSocket_h__ */
