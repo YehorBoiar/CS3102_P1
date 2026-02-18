@@ -16,7 +16,7 @@ PROGRAMS	=udp-server-1 udp-client-1 \
 	udp-server-async \
 	timer \
 	udp-chat-3 \
-	continious_udp_sender
+	udp_sender
 
 .SUFFIXES:	.c .o
 
@@ -30,7 +30,7 @@ C-files		=udp-server-1.c udp-client-1.c \
 	udp-server-async.c \
 	timer.c \
 	udp-chat-3.c \
-	continious_udp_sender.c
+	udp_sender.c
 
 
 all:	$(PROGRAMS)
@@ -76,7 +76,7 @@ udp-chat-2:	udp-chat-2.o UdpSocket.o
 udp-chat-3:	udp-chat-3.o UdpSocket.o
 	$(CC) -o $@ $+
 
-continious_udp_sender:	continious_udp_sender.o UdpSocket.o
+udp_sender:	udp_sender.o UdpSocket.o
 	$(CC) -o $@ $+
 
 .PHONY:	clean

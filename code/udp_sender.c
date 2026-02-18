@@ -22,25 +22,28 @@ int readLine(int fd, UdpBuffer_t *buffer);
 
 int main(int argc, char *argv[])
 {
+    if (argc != 3)
+    {
+        ERROR("usage: udp-sender <hostname> <local_port>\n\nhint: use 'id -u' or getuid(2) to get your port\n\nhint2: you can run `udp-sender <hostname> $(id -u)` to input your port automatically");
+        exit(0);
+    }
+
+    char *hostname = argv[1];
+    uint16_t local_port = (uint16_t)atoi(argv[2]);
+
     srand(69);
 
     UdpSocket_t *local, *remote;
     UdpBuffer_t buffer;
     uint8_t bytes[G_SIZE];
 
-    if (argc != 2)
-    {
-        ERROR("usage: udp-client-2 <hostname>");
-        exit(0);
-    }
-
-    if ((local = setupUdpSocket_t((char *)0, G_SRV_PORT)) == (UdpSocket_t *)0)
+    if ((local = setupUdpSocket_t((char *)0, local_port)) == (UdpSocket_t *)0)
     {
         ERROR("local problem");
         exit(0);
     }
 
-    if ((remote = setupUdpSocket_t(argv[1], G_SRV_PORT)) == (UdpSocket_t *)0)
+    if ((remote = setupUdpSocket_t(hostname, G_SRV_PORT)) == (UdpSocket_t *)0)
     {
         ERROR("remote hostname/port problem");
         exit(0);
@@ -61,9 +64,9 @@ int main(int argc, char *argv[])
         for (uint8_t i = 0; i < buffer.n; i++)
             buffer.bytes[i] = rand() % 127;
 
-        if ((buffer.n > 0) && (sendUdp(local, remote, &buffer) != buffer.n))
+        if (sendUdp(local, remote, &buffer) != buffer.n)
             ERROR("sendUdp() problem");
-            
+
         sleep(1);
     }
 
