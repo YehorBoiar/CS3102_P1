@@ -23,9 +23,10 @@ def load_data():
     return df
 
 def get_stats(df):
-    # get loss rate
     total_sent = len(df)
     lost_packets = df[df['time'].isna()]
+    valid_packets = df[df['time'].notna()]
+    
     loss_rate = (len(lost_packets) / total_sent) * 100
     
     # get precision
@@ -35,7 +36,10 @@ def get_stats(df):
         'total_sent': total_sent,
         'total_lost': len(lost_packets),
         'loss_rate': loss_rate,
-        'avg_precision': df['precision'].mean()
+        'avg_precision': df['precision'].mean(),
+        'avg_rtt': valid_packets['time'].mean(),
+        'max_rtt': valid_packets['time'].max(),
+        'min_rtt': valid_packets['time'].min()
     }
 
     return stats
@@ -81,10 +85,6 @@ def plot_binned_boxplots(df, bin_size=60):
     plt.show()
 
 def plot_cdf(df):
-    """
-    Plots the Cumulative Distribution Function.
-    Good for showing that delay is not Gaussian.
-    """
     valid_rtt = df['time'].dropna().sort_values()
     yvals = np.arange(len(valid_rtt)) / float(len(valid_rtt) - 1)
 
@@ -97,7 +97,7 @@ def plot_cdf(df):
     
     plt.title('CDF of Round Trip Time')
     plt.xlabel('RTT (ms)')
-    plt.ylabel('Probability (0.0 - 1.0)')
+    plt.ylabel('Probability')
     plt.grid(True)
     plt.legend()
     plt.savefig('3_cdf_plot.png')
@@ -105,17 +105,19 @@ def plot_cdf(df):
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    # 1. Load
     df = load_data()
     stats = get_stats(df)
 
-    # 2. Print Text Report
     print("="*40)
-    print(f"Network Trace Analysis")
+    print(f"Network Trace Analysis Report")
     print("="*40)
     print(f"Total Sent:     {stats['total_sent']}")
     print(f"Total Lost:     {stats['total_lost']} ({stats['loss_rate']:.2f}%)")
-    print(f"Average precision: {stats['avg_precision']:.3f} ms")
+
+    print("-" * 20)
+    print(f"RTT Min/Max:    {stats['min_rtt']:.2f} ms / {stats['max_rtt']:.2f} ms")
+    print(f"Avg RTT:        {stats['avg_rtt']:.2f} ms")
+    print(f"Avg precision:     {stats['avg_precision']:.2f} ms")
     print("="*40)
 
     # # 3. Generate Plots
