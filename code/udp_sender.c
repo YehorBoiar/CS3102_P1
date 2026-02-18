@@ -89,14 +89,14 @@ int main(int argc, char *argv[])
         buffer.n = G_SIZE;
 
         for (uint32_t i = 0; i < buffer.n; i++)
-            buffer.bytes[i] = (uint8_t)(rand() % 127);
+            buffer.bytes[i] = (u_int32_t)(rand() % 127);
 
         clock_gettime(CLOCK_MONOTONIC, &send_ts);
 
         if (sendUdp(local, remote, &buffer) != (int)buffer.n)
             ERROR("sendUdp() problem");
 
-        int r = get_udp_response(local, remote, &buffer, 1);
+        int r = get_udp_response(local, remote, &buffer, 1000);
 
         if (r >= 0) // packet is valid even if 0 bytes
         {
