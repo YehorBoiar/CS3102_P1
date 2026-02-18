@@ -1,8 +1,8 @@
 /********************************************************
-simple UDP IPv4 client, using UdpSocket_t
+UDP IPv4 client using UdpSocket_t.
 
-saleem: Jan2024, Jan2022, Jan2021, Nov2002, Dec2001
-Checked February 2025, 2026 (sjm55)
+Every second sends fixed-size (128 byte) UDP packets containing
+random uint8_t integers a specified host on specified port.
 *********************************************************/
 
 #include <stdio.h>
@@ -17,8 +17,6 @@ Checked February 2025, 2026 (sjm55)
 #define G_SIZE ((uint32_t)128)
 
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
-
-#define G_QUIT "quit"
 
 int readLine(int fd, UdpBuffer_t *buffer);
 
@@ -65,7 +63,8 @@ int main(int argc, char *argv[])
 
         if ((buffer.n > 0) && (sendUdp(local, remote, &buffer) != buffer.n))
             ERROR("sendUdp() problem");
-
+            
+        sleep(1);
     }
 
     closeUdp(local);
