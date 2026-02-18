@@ -1,10 +1,3 @@
-/********************************************************
-UDP IPv4 client using UdpSocket_t.
-
-Every second sends fixed-size (128 byte) UDP packets containing
-random uint8_t integers a specified host on specified port.
-*********************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +11,7 @@ random uint8_t integers a specified host on specified port.
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
 #define G_SIZE ((uint32_t)128)
+#define TIMER ((uint32_t)20*60) // 20 min
 
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 
@@ -75,7 +69,11 @@ int main(int argc, char *argv[])
 
     uint32_t counter = 0;
 
-    while (1)
+    struct timespec start_time, current_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    double elapsed = 0;
+
+    while (elapsed < TIMER)
     {
         struct timespec send_ts, recv_ts;
         buffer.bytes = bytes;
@@ -96,8 +94,7 @@ int main(int argc, char *argv[])
         {
             clock_gettime(CLOCK_MONOTONIC, &recv_ts);
 
-            double rtt_ms = (recv_ts.tv_sec  - send_ts.tv_sec) * 1000.0
-              + (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
+            double rtt_ms = (recv_ts.tv_sec - send_ts.tv_sec) * 1000.0 + (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
 
             printf("%u,%.3f,%d\n", counter, rtt_ms, r);
         }
@@ -105,6 +102,10 @@ int main(int argc, char *argv[])
         {
             ERROR("LOST");
         }
+
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        elapsed = (current_time.tv_sec - start_time.tv_sec) +
+                  (current_time.tv_nsec - start_time.tv_nsec) / 1e9;
 
         counter++;
         sleep(1);
