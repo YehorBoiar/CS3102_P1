@@ -3,8 +3,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-def load_data():
-    df = pd.read_csv('data/data.csv', 
+SMOL_DATA = 'data/data.csv'
+BIG_DATA = 'data/data_big.csv'
+
+def load_data(data_filename):
+    df = pd.read_csv(data_filename, 
                      names=['counter', 'time', 'bytes_received'], 
                      on_bad_lines='skip') 
     
@@ -103,9 +106,77 @@ def plot_cdf(df):
     plt.savefig('3_cdf_plot.png')
     plt.show()
 
+def estimate_bandwidth(df_small, df_large):
+    """
+    Calculates Bandwidth
+    """
+    print("="*40)
+    print("Bandwidth Estimation")
+    print("="*40)
+
+    # 1. Filter valid packets
+    valid_s = df_small.dropna(subset=['time', 'bytes_received'])
+    valid_l = df_large.dropna(subset=['time', 'bytes_received'])
+
+    if valid_s.empty or valid_l.empty:
+        print("Error: One of the datasets is empty or has 100% packet loss.")
+        return
+
+    # 2. Get the Packet Sizes (Mode or Median to be safe)
+    # We use mode() because size should be constant in a ping test
+    size_s = valid_s['bytes_received'].mode()[0]
+    size_l = valid_l['bytes_received'].mode()[0]
+
+    # 3. Get the Median RTTs
+    rtt_s = valid_s['time'].median()
+    rtt_l = valid_l['time'].median()
+
+    print(f"Small Dataset: {size_s} bytes | Median RTT: {rtt_s:.2f} ms")
+    print(f"Large Dataset: {size_l} bytes | Median RTT: {rtt_l:.2f} ms")
+
+    if size_l <= size_s:
+        print("\nERROR: 'Large' packet size must be greater than 'Small'.")
+        print("Check your file inputs.")
+        return
+
+    # --- THE MATH (Slide 39) ---
+    
+    # 1. Delta Bits (b)
+    # The 'bytes_received' in ping usually includes IP header (20) + ICMP header (8).
+    # The formula relies on the physical difference in bits on the wire.
+    b_bits = (size_l - size_s) * 8
+
+    # 2. Delta Time (Tp in your slide context for difference)
+    # We need the One-Way delay difference.
+    # Since we have RTT, we divide the difference by 2.
+    delta_rtt_ms = (rtt_l - rtt_s)
+    
+    # Sanity Check: Did large packets actually take longer?
+    if delta_rtt_ms <= 0:
+        print("\nWARNING: Large packets were faster or equal to small packets.")
+        print(f"Delta RTT: {delta_rtt_ms:.2f} ms")
+        print("Conclusion: Bottleneck bandwidth is likely higher than measurement precision allows.")
+        return
+
+    # Convert ms to seconds
+    # Td_path = (median(Td_large) - median(Td_small)) / 2
+    delta_oneway_sec = (delta_rtt_ms / 2) / 1000.0
+
+    # 3. Estimate Rate (r = b / Tp)
+    bandwidth_bps = b_bits / delta_oneway_sec
+    bandwidth_mbps = bandwidth_bps / 1_000_000
+
+    print("-" * 20)
+    print(f"Results:")
+    print(f"  Delta Bits:          {b_bits} bits")
+    print(f"  Delta One-Way Time:  {delta_oneway_sec*1000:.4f} ms")
+    print(f"  Estimated Bandwidth: {bandwidth_mbps:.2f} Mbps")
+    print("="*40)
+
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    df = load_data()
+    df = load_data(SMOL_DATA)
+    df2 = load_data(BIG_DATA)
     stats = get_stats(df)
 
     print("="*40)
@@ -119,6 +190,10 @@ if __name__ == "__main__":
     print(f"Avg RTT:        {stats['avg_rtt']:.2f} ms")
     print(f"Avg precision:     {stats['avg_precision']:.2f} ms")
     print("="*40)
+
+
+    estimate_bandwidth(df, df2)
+
 
     # # 3. Generate Plots
     plot_scatter_loss(df, stats)

@@ -1,0 +1,59 @@
+% ===================================== SET YOUR DETAILS HERE ==========================================
+\def\myTitle{Report Title}
+\def\mySubtitle{Report subtitle}
+\def\myDateToday{December 22, 2025}
+\def\myStudId{Beeg Number (ID)}
+\def\myParIndent{2em}
+\def\myMarginLeft{35mm}
+\def\myMarginRight{35mm}
+\def\myHeader{30mm}
+\def\myFooter{40mm}
+% ======================================================================================================
+
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{parskip}
+% \usepackage{ebgaramond-maths}
+\usepackage[backend=bibtex, style=ieee]{biblatex}
+\addbibresource{res/references.bib}
+\usepackage{blindtext}
+\usepackage{geometry}
+\usepackage{csvsimple}
+\usepackage{multicol}
+\usepackage{minted}
+\geometry{
+    left=\myMarginLeft,
+    right=\myMarginRight,
+    top=\myHeader,
+    bottom=\myFooter
+}
+\setlength\parindent{\myParIndent}
+\newcommand{\betterapdx}[1]{%
+\section*{#1}%
+\markright{}%
+\addcontentsline{toc}{section}{#1}%
+}
+\newcommand{\tab}{
+    \hspace{\myParIndent}
+}
+
+\title{\includegraphics[width=5cm]{res/logo.png}\\[1cm] 
+\textbf{\Huge{\myTitle}}\\[0.5em]
+\huge\mySubtitle}
+
+\author{\myStudId}
+\date{\myDateToday}
+
+\begin{document}
+
+\maketitle
+\pagebreak
+\tableofcontents
+\pagebreak
+\newpage
+\input{sections/intro.tex}
+\newpage
+\nocite{*}
+\printbibliography
+\end{document}
