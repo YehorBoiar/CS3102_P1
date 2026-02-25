@@ -16,9 +16,16 @@
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
 #define G_SIZE ((uint32_t)128)
-#define TIMER ((uint32_t)20*60) // 20 min
+#define TIMER ((uint32_t)20 * 60) // 20 min
 
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
+
+typedef struct
+{
+    uint32_t seq_num;
+    struct timespec send_ts;
+    uint32_t probe_val;
+} ProbePacket_t;
 
 int get_udp_response(UdpSocket_t *local,
                      UdpSocket_t *remote,
@@ -33,8 +40,9 @@ int get_udp_response(UdpSocket_t *local,
 
     if (ready > 0)
         return recvUdp(local, remote, buffer);
-    
-    if (ready == 0) return -2; // Timeout code
+
+    if (ready == 0)
+        return -2; // Timeout code
 
     return -1; // System error code
 }
@@ -78,48 +86,55 @@ int main(int argc, char *argv[])
     }
 
     uint32_t counter = 0;
-    struct timespec start_time, current_time;
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
-    double elapsed = 0;
+    struct timespec start_run, current_run;
+    clock_gettime(CLOCK_MONOTONIC, &start_run);
 
-    while (elapsed < TIMER)
-    {
-        struct timespec send_ts, recv_ts;
-        buffer.bytes = bytes;
-        buffer.n = G_SIZE;
+    printf("sequence_number,rtt_ms,bytes_received,status\n"); // csv header
 
-        for (uint32_t i = 0; i < buffer.n; i++)
-            buffer.bytes[i] = (u_int32_t)(rand() % 127);
+    while (counter < 1200)
+    { // 20 minutes @ 1 per second
 
-        clock_gettime(CLOCK_MONOTONIC, &send_ts);
+        ProbePacket_t tx_pkt, rx_pkt;
+        tx_pkt.seq_num = counter;
+        tx_pkt.probe_val = 0xDEADBEEF;
+        clock_gettime(CLOCK_MONOTONIC, &tx_pkt.send_ts);
 
+        buffer.bytes = (uint8_t *)&tx_pkt;
+        buffer.n = sizeof(tx_pkt);
+
+        // 1. Send Probe
         if (sendUdp(local, remote, &buffer) != (int)buffer.n)
-            ERROR("sendUdp() problem");
-
-        int r = get_udp_response(local, remote, &buffer, 1000);
-
-        if (r >= 0) // packet is valid even if 0 bytes
         {
+            ERROR("sendUdp() failed");
+        }
+
+        UdpBuffer_t rx_buffer;
+        rx_buffer.bytes = (uint8_t *)&rx_pkt;
+        rx_buffer.n = sizeof(rx_pkt);
+
+        int r = get_udp_response(local, remote, &rx_buffer, 1000);
+
+        if (r == (int)sizeof(ProbePacket_t) && rx_pkt.probe_val == 0xDEADBEEF)
+        {
+            struct timespec recv_ts;
             clock_gettime(CLOCK_MONOTONIC, &recv_ts);
-            double rtt_ms = (recv_ts.tv_sec - send_ts.tv_sec) * 1000.0 + 
-                            (recv_ts.tv_nsec - send_ts.tv_nsec) / 1e6;
-            printf("%u,%.3f,%d\n", counter, rtt_ms, r);
-            fflush(stdout);
+
+            // Calculate RTT: RTT = (T_recv - T_send)
+            double rtt_ms = (recv_ts.tv_sec - tx_pkt.send_ts.tv_sec) * 1000.0 +
+                            (recv_ts.tv_nsec - tx_pkt.send_ts.tv_nsec) / 1e6;
+
+            printf("%u,%.3f,%d,SUCCESS\n", rx_pkt.seq_num, rtt_ms, r);
         }
         else if (r == -2)
         {
-            printf("LOST (Timeout),,\n");
-            fflush(stdout);
+            printf("%u,,0,LOST\n", counter);
         }
         else
         {
-            ERROR("System Error in Poll/Recv");
+            printf("%u,,0,ERROR_OR_CORRUPT\n", counter);
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        elapsed = (double)(current_time.tv_sec - start_time.tv_sec) +
-                  (double)(current_time.tv_nsec - start_time.tv_nsec) / 1e9;
-
+        fflush(stdout);
         counter++;
         sleep(1);
     }
