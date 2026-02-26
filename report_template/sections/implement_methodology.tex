@@ -13,6 +13,6 @@ The assignment asks for one probe per second and permits only one outstanding pr
 \end{enumerate}
 
 \subsection{Data Collection Setup}
-I sent 1200 probs in $~20$ minutes of time. The sender was executed on \textbf{pc3-005-l}, targeting \texttt{slurpe-5} (running with the \texttt{--fullpe} flag) on \textbf{pc3-006-l}. 
+I sent 1200 probes in $~20$ minutes of time. The sender was executed on \textbf{pc3-005-l}, targeting \texttt{slurpe-5} (running with the \texttt{--fullpe} flag) on \textbf{pc3-006-l}. 
 
 The \texttt{stdbuf -oL} utility was used to write each probe result to a CSV file, recording sequence number, RTT (ms), byte count, and status for analysis.
