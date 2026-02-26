@@ -1,0 +1,18 @@
+\section{Implementation and Experimental Methodology}
+
+The probe program was implemented using the provided code from the lecture week 3. The only part that I've used were files: \textbf{UdpSocket.c/h}, and I took inspiration from \textbf{upd-client-2}.
+
+\subsection{Transmission Control and Concurrency}
+The assignment asks for one probe per second and permits only one outstanding probe at any given time. To enforce this, the app uses \texttt{poll()} system call:
+\begin{enumerate}
+    \item \textbf{Transmission:} For each iteration, a \texttt{ProbePacket\_t} containing a sequence number, a monotonic transmit timestamp, and a magic value is constructed and sent to the remote reflector via UDP.
+
+    \item \textbf{Reception Window:} The socket is monitored using \texttt{poll()} with a timeout of $1$ second to detect an incoming reflected datagram.
+
+    \item \textbf{Classification:} If a correctly sized packet with a valid magic number is received within the timeout window, the RTT is computed and the probe is logged as \texttt{SUCCESS}. If no packet arrives before the timeout, the probe is marked as \texttt{LOST}. Any malformed or invalid packet is classified as \texttt{ERROR\_OR\_CORRUPT}.
+\end{enumerate}
+
+\subsection{Data Collection Setup}
+I sent 1200 probs in $~20$ minutes of time. The sender was executed on \textbf{pc3-005-l}, targeting \texttt{slurpe-5} (running with the \texttt{--fullpe} flag) on \textbf{pc3-006-l}. 
+
+The \texttt{stdbuf -oL} utility was used to write each probe result to a CSV file, recording sequence number, RTT (ms), byte count, and status for analysis.

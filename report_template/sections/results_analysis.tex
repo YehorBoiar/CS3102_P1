@@ -1,0 +1,52 @@
+\section{Results Analysis}
+The Round Trip Time (RTT) shows a clear bimodal distribution, visible in both the scatter plot (Figure 1) and the CDF (Figure 2).
+
+\begin{itemize}
+    \item \textbf{Baseline Latency:} The minimum RTT is 32.03 ms, close to the expected 30 ms, with a median of 42.82 ms during stable periods.
+    
+    \item \textbf{Queueing Spikes:} RTT occasionally rises up to 290.59 ms, with the 95th percentile at 256.31 ms, and the CDF shows almost no packets between 100 ms and 150 ms. This pattern could be caused by congestion on the path, but other factors—such as OS scheduling delays, emulator artifacts, or background traffic—might also contribute.
+
+    \item \textbf{Variability:} Average change between consecutive RTTs is 13.81 ms, showing high variability during possible congestion.
+\end{itemize}
+
+Grouping RTTs into 60-second bins (Figure 3) shows the timing of these delays. The first three minutes (Bins 0--2) and last nine minutes (Bins 11--19) are stable, with small variations. Between minutes 3 and 11, RTTs rise above 200 ms with wide variation, indicating sustained congestion rather than short spikes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../1_scatter_loss.png} 
+    \caption{RTT trace showing bimodal delays and bursty packet loss.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../3_cdf_plot.png} 
+    \caption{CDF of RTT highlighting two distinct path states.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../2_boxplots_stability.png} 
+    \caption{RTT stability over time (60-second bins) showing periods of high variance.}
+\end{figure}
+
+\subsection{End-to-End Data Rate}
+
+The application payload is 32 bytes. Including UDP (8 bytes), IPv4 (20 bytes), and Ethernet (14 bytes) overhead, the physical frame size ($S_{\text{frame}}$) on the wire is 74 bytes. 
+
+Transmitting one packet per second gives a theoretical transmission rate ($R_{\text{theoretical}}$):
+
+\[
+R_{\text{theoretical}} = \frac{S_{\text{frame}} \times 8 \text{ bits/byte}}{t_{\text{interval}}} 
+= \frac{74 \times 8}{1 \text{ s}} 
+= 592 \text{ bps}
+\]
+
+Over the 20-minute measurement window ($T_{\text{total}} = 1200$ s), 141 of 1200 packets were lost. The actual throughput ($R_{\text{actual}}$) using only successfully delivered packets ($N_{\text{success}} = 1060$) is:
+
+\[
+R_{\text{actual}} = \frac{N_{\text{success}} \times S_{\text{frame}} \times 8 \text{ bits/byte}}{T_{\text{total}}} 
+= \frac{1060 \times 74 \times 8}{1200 \text{ s}} 
+\approx 522.9 \text{ bps}
+\]
+
+Although the path can handle up to 20 Mbps (as it stated in specs), the measured rate reflects the application's fixed sending schedule. High delays and packet loss indicate the link is often saturated by background cross-traffic.
