@@ -15,8 +15,7 @@
 #include "UdpSocket.h"
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
-#define G_SIZE ((uint32_t)128)
-#define TIMER ((uint32_t)20 * 60) // 20 min
+#define TIMER ((uint32_t)20 * 60)    // 20 min
 
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 
@@ -24,7 +23,7 @@ typedef struct
 {
     uint32_t seq_num;
     struct timespec send_ts;
-    uint32_t probe_val;
+    uint32_t probe_magic_val; // to check whether we received our own packet
 } ProbePacket_t;
 
 int get_udp_response(UdpSocket_t *local,
@@ -62,7 +61,6 @@ int main(int argc, char *argv[])
 
     UdpSocket_t *local = NULL, *remote = NULL;
     UdpBuffer_t buffer;
-    uint8_t bytes[G_SIZE];
 
     if ((local = setupUdpSocket_t((char *)0, local_port)) == (UdpSocket_t *)0)
     {
@@ -86,7 +84,7 @@ int main(int argc, char *argv[])
     }
 
     uint32_t counter = 0;
-    struct timespec start_run, current_run;
+    struct timespec start_run;
     clock_gettime(CLOCK_MONOTONIC, &start_run);
 
     printf("sequence_number,rtt_ms,bytes_received,status\n"); // csv header
@@ -96,7 +94,7 @@ int main(int argc, char *argv[])
 
         ProbePacket_t tx_pkt, rx_pkt;
         tx_pkt.seq_num = counter;
-        tx_pkt.probe_val = 0xDEADBEEF;
+        tx_pkt.probe_magic_val = 0xDEADBEEF;
         clock_gettime(CLOCK_MONOTONIC, &tx_pkt.send_ts);
 
         buffer.bytes = (uint8_t *)&tx_pkt;
@@ -114,7 +112,7 @@ int main(int argc, char *argv[])
 
         int r = get_udp_response(local, remote, &rx_buffer, 1000);
 
-        if (r == (int)sizeof(ProbePacket_t) && rx_pkt.probe_val == 0xDEADBEEF)
+        if (r == (int)sizeof(ProbePacket_t) && rx_pkt.probe_magic_val == 0xDEADBEEF)
         {
             struct timespec recv_ts;
             clock_gettime(CLOCK_MONOTONIC, &recv_ts);
