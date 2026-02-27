@@ -16,7 +16,8 @@
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
 #define TIMER ((uint32_t)20 * 60)    // 20 min
-
+#define LOST ((u_int32_t) -2)
+#define ERROR_OR_CORRUPT ((u_int32_t) -1)
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 
 typedef struct
@@ -41,9 +42,9 @@ int get_udp_response(UdpSocket_t *local,
         return recvUdp(local, remote, buffer);
 
     if (ready == 0)
-        return -2; // Timeout code
+        return LOST;
 
-    return -1; // System error code
+    return ERROR_OR_CORRUPT;
 }
 
 int main(int argc, char *argv[])
@@ -123,7 +124,7 @@ int main(int argc, char *argv[])
 
             printf("%u,%.3f,%d,SUCCESS\n", rx_pkt.seq_num, rtt_ms, r);
         }
-        else if (r == -2)
+        else if (r == LOST)
         {
             printf("%u,,0,LOST\n", counter);
         }
