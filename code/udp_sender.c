@@ -1,6 +1,6 @@
 /**
  * To collect data and put it into the data.csv do
- * stdbuf -oL ./udp_sender klovia $(id -u) > ../data/data.csv
+ * ./udp_sender klovia $(id -u) > ../data/data.csv
  * (assuming you're at root)
  */
 #include <stdio.h>

@@ -1,10 +1,31 @@
 \section{Results Analysis}
+
+\subsection{Experimental Assumptions}
+The following assumptions are made regarding the data collection and subsequent analysis:
+\begin{itemize}
+    \item \textbf{Negligible Processing Delay:} The turnaround time for the remote server to process and echo the probe packet is assumed to be near-zero and negligible compared to the network RTT.
+    \item \textbf{Fixed Protocol Overhead:} Network framing overhead is assumed to be exactly 42 bytes (14 bytes Ethernet, 20 bytes IPv4, 8 bytes UDP; see Figure~\ref{fig:protocol_headers_app}) without optional headers, resulting in a constant 74-byte physical frame.
+    \item \textbf{Strict Timeout Threshold:} Probe packets that exceed the 1000\,ms polling timeout are classified strictly as lost, rather than severely delayed.
+    \item \textbf{Constant Transmission Rate:} The sending interval is assumed to be precisely 1.0 second, ignoring any minor OS scheduling drift introduced by the \texttt{sleep(1)} call in the sender loop.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.32\textwidth]{res/IEEE802.png} \hfill
+    \includegraphics[width=0.32\textwidth]{res/RFC791.png} \hfill
+    \includegraphics[width=0.32\textwidth]{res/RFC768.png}
+    \caption{Standard header formats establishing overhead sizes: \href{https://www.firewall.cx/networking/ethernet/ieee-8023-frame.html}{IEEE 802.3 Ethernet} (left), \href{https://datatracker.ietf.org/doc/html/rfc791}{IPv4 RFC 791} (center), and \href{https://datatracker.ietf.org/doc/html/rfc768}{UDP RFC 768} (right).}
+    \label{fig:protocol_headers_app}
+\end{figure}
+
+\subsection{Round Trip Time Characteristics}
+
 The Round Trip Time (RTT) shows a clear bimodal distribution, visible in both the scatter plot (Figure 1) and the CDF (Figure 2).
 
 \begin{itemize}
     \item \textbf{Baseline Latency:} The minimum RTT is 32.03 ms, close to the expected 30 ms, with a median of 42.82 ms during stable periods.
     
-    \item \textbf{Queueing Spikes:} RTT occasionally rises up to 290.59 ms, with the 95th percentile at 256.31 ms, and the CDF shows almost no packets between 100 ms and 150 ms. This pattern could be caused by congestion on the path, but other factors—such as OS scheduling delays, emulator artifacts, or background traffic—might also contribute.
+    \item \textbf{Queueing Spikes:} RTT occasionally rises up to 290.59 ms, with the 95th percentile at 256.31 ms, and the CDF shows almost no packets between 100 ms and 150 ms. This pattern could be caused by congestion on the path, but other factors -- such as OS scheduling delays, emulator artifacts, or background traffic -- might also contribute.
 
     \item \textbf{Variability:} Average change between consecutive RTTs is 13.81 ms, showing high variability during possible congestion.
 \end{itemize}
@@ -46,7 +67,7 @@ Over the 20-minute measurement window ($T_{\text{total}} = 1200$ s), 141 of 1200
 \[
 R_{\text{actual}} = \frac{N_{\text{success}} \times S_{\text{frame}} \times 8 \text{ bits/byte}}{T_{\text{total}}} 
 = \frac{1059 \times 74 \times 8}{1200 \text{ s}} 
-\approx 522.9 \text{ bps}
+\approx 457.1 \text{ bps}
 \]
 
 Although the path can handle up to 20 Mbps (as it stated in specs), the measured rate reflects the application's fixed sending schedule. High delays and packet loss indicate the link is often saturated by background cross-traffic.

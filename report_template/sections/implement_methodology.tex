@@ -1,6 +1,6 @@
 \section{Implementation and Experimental Methodology}
 
-The probe program was implemented using the provided code from the lecture week 3. The only part that I've used were files: \textbf{UdpSocket.c/h}, and I took inspiration from \textbf{upd-client-2}.
+The probe program was implemented using the provided code from the lecture week 3. The only part that I've reused were files: \textbf{UdpSocket.c/h}, and I took inspiration from \textbf{upd-client-2} that was reading a string from the terminal and sending that as a UDP packet of array of characters.
 
 \subsection{Transmission Control and Concurrency}
 The assignment asks for one probe per second and permits only one outstanding probe at any given time. To enforce this, the app uses \texttt{poll()} system call:
@@ -15,4 +15,10 @@ The assignment asks for one probe per second and permits only one outstanding pr
 \subsection{Data Collection Setup}
 I sent 1200 probes in $~20$ minutes of time. The sender was executed on \textbf{pc3-005-l}, targeting \texttt{slurpe-5} (running with the \texttt{--fullpe} flag) on \textbf{pc3-006-l}. 
 
-The \texttt{stdbuf -oL} utility was used to write each probe result to a CSV file, recording sequence number, RTT (ms), byte count, and status for analysis.
+The program generates structured CSV output directly using \texttt{printf}. A CSV header is printed at startup, and each probe result is formatted in comma-separated form:
+
+\begin{verbatim}
+printf("sequence_number,rtt_ms,bytes_received,status\n");
+\end{verbatim}
+
+The resulting structured output was redirected to \texttt{data.csv} for analysis part.

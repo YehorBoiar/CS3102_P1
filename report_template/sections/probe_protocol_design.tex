@@ -1,8 +1,8 @@
 \section{Probe Protocol Design}
 
-The application utilizes a fixed 32-byte payload defined by a C \texttt{struct}. This fixed-size structure ensures type safety and precise memory alignment on the lab machines. 
+Sends 32 byte packets built with C \texttt{struct}.
 
-The packet is composed of three explicit fields:
+The packet is composed of three fields:
 \begin{itemize}
     \item \textbf{Sequence Number (\texttt{seq\_num}, 4 bytes):} Transmitted probe index. This allows the application to accurately track packet loss and detect any out-of-order delivery.
     
@@ -13,4 +13,4 @@ The packet is composed of three explicit fields:
     Consider a scenario where another process (or a misconfigured script) sends arbitrary UDP data to the same listening port. The kernel will still deliver that datagram to the application, as it matches the port number. Without validating the magic number, the program could mistakenly interpret the payload as a legitimate probe response and compute an invalid RTT. While this situation is unlikely in the controlled coursework environment where only the reflector is expected to respond, including a magic value provides defensive robustness and ensures the application processes only correctly structured probe packets.
 \end{itemize}
 
-\textit{Note: The remaining 8 bytes of the 32-byte total consist of implicit memory padding added by the C compiler to correctly align the 16-byte \texttt{timespec} structure in memory.}
+\textit{Note: The remaining 8 bytes of the 32-byte total consist of memory padding added by the C compiler to correctly align the 16-byte \texttt{timespec} structure in memory.}
