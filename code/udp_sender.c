@@ -49,8 +49,6 @@ int get_udp_response(UdpSocket_t *local,
 
 int main(int argc, char *argv[])
 {
-    srand(69);
-
     if (argc != 3)
     {
         ERROR("usage: udp-sender <hostname> <local_port>\n\nhint: use 'id -u' or getuid(2) to get your port");
