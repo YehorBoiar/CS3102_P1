@@ -1,6 +1,8 @@
 \section{Results Analysis}
 
-\subsection{Experimental Assumptions}
+\subsection{Experiment 1: End-to-End Delay and Throughput}
+
+\subsubsection{Experimental Assumptions}
 The following assumptions are made regarding the data collection and subsequent analysis:
 \begin{itemize}
     \item \textbf{Negligible Processing Delay:} The turnaround time for the remote server to process and echo the probe packet is assumed to be near-zero and negligible compared to the network RTT.
@@ -18,7 +20,7 @@ The following assumptions are made regarding the data collection and subsequent 
     \label{fig:protocol_headers_app}
 \end{figure}
 
-\subsection{Round Trip Time Characteristics}
+\subsubsection{Round Trip Time Characteristics}
 
 The Round Trip Time (RTT) shows a clear bimodal distribution, visible in both the scatter plot (Figure 1) and the CDF (Figure 2).
 
@@ -50,24 +52,49 @@ Grouping RTTs into 60-second bins (Figure 3) shows the timing of these delays. T
     \caption{RTT stability over time (60-second bins) showing periods of high variance.}
 \end{figure}
 
-\subsection{End-to-End Data Rate}
+\subsubsection{End-to-End Throughput}
 
 The application payload is 32 bytes. Including UDP (8 bytes), IPv4 (20 bytes), and Ethernet (14 bytes) overhead, the physical frame size ($S_{\text{frame}}$) on the wire is 74 bytes. 
 
-Transmitting one packet per second gives a theoretical transmission rate ($R_{\text{theoretical}}$):
+Transmitting one packet per second gives a throughput of ($R_{\text{throughput}}$):
 
-\[
-R_{\text{theoretical}} = \frac{S_{\text{frame}} \times 8 \text{ bits/byte}}{t_{\text{interval}}} 
+$$
+R_{\text{throughput}} = \frac{S_{\text{frame}} \times 8 \text{ bits/byte}}{t_{\text{interval}}} 
 = \frac{74 \times 8}{1 \text{ s}} 
 = 592 \text{ bps}
-\]
+$$
 
-Over the 20-minute measurement window ($T_{\text{total}} = 1200$ s), 141 of 1200 packets were lost. The actual throughput ($R_{\text{actual}}$) using only successfully delivered packets ($N_{\text{success}} = 1059$) is:
+Over the 20-minute measurement window ($T_{\text{total}} = 1200$ s), 141 of 1200 packets were lost. The goodput ($R_{\text{actual}}$) using only successfully delivered packets ($N_{\text{success}} = 1059$) is:
 
-\[
+$$
 R_{\text{actual}} = \frac{N_{\text{success}} \times S_{\text{frame}} \times 8 \text{ bits/byte}}{T_{\text{total}}} 
 = \frac{1059 \times 74 \times 8}{1200 \text{ s}} 
 \approx 457.1 \text{ bps}
-\]
+$$
 
-Although the path can handle up to 20 Mbps (as it stated in specs), the measured rate reflects the application's fixed sending schedule. High delays and packet loss indicate the link is often saturated by background cross-traffic.
+\subsection{Experiment 2: Link Capacity Estimation}
+
+The throughput measured in Experiment 1 reflects the application's sending rate, not the bottleneck link's physical capacity. To estimate the actual data rate, a second experiment utilized the Variable Packet Size technique.
+
+\subsubsection{Methodology and Assumptions}
+The probe alternated between small (29 bytes received) and large (1328 bytes received) packets. In addition to Experiment 1's assumptions, this estimation assumes:
+\begin{itemize}
+    \item \textbf{Symmetry:} The path is symmetric; one-way delay is exactly $RTT/2$.
+    \item \textbf{Transmission Dominance:} The RTT difference is caused entirely by the additional transmission delay ($T_x$) of the larger packet.
+    \item \textbf{Constant Propagation:} The propagation delay ($T_p$) remains consistent across sizes.
+\end{itemize}
+
+\subsubsection{Data Rate Calculation}
+Using median RTTs to account for network outliers, the extracted values are:
+\begin{itemize}
+    \item Median RTT Small (29 bytes): 63.01\,ms
+    \item Median RTT Large (1328 bytes): 64.37\,ms
+\end{itemize}
+
+The data rate ($r$) is calculated by dividing the bit difference ($b$) by the one-way delay difference ($T_{d\_path}$):
+
+$$b = (1328 - 29) \times 8 = 10392 \text{ bits}$$
+$$T_{d\_path} = \frac{64.37 - 63.01}{2} = 0.68 \text{ ms} = 0.00068 \text{ s}$$
+$$r = \frac{b}{T_{d\_path}} = \frac{10392}{0.00068} \approx 15.28 \text{ Mbps}$$
+
+Using exact unrounded float values during calculation yields a final capacity of \textbf{15.51 Mbps}. This aligns well with the expected 20 Mbps limit, confirming high link capacity despite heavy cross-traffic saturation.
