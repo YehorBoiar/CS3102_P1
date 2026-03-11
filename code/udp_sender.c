@@ -19,6 +19,8 @@
 #define LOST ((u_int32_t) -2)
 #define ERROR_OR_CORRUPT ((u_int32_t) -1)
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
+#define SMALL_SIZE 1
+#define LARGE_SIZE 1000
 
 typedef struct
 {
@@ -96,8 +98,15 @@ int main(int argc, char *argv[])
         tx_pkt.probe_magic_val = 0xDEADBEEF;
         clock_gettime(CLOCK_MONOTONIC, &tx_pkt.send_ts);
 
+        size_t current_payload_size;
+        if (counter % 2 == 0) {
+            current_payload_size = sizeof(uint32_t) + sizeof(struct timespec) + sizeof(uint32_t) + SMALL_SIZE;
+        } else {
+            current_payload_size = sizeof(uint32_t) + sizeof(struct timespec) + sizeof(uint32_t) + LARGE_SIZE;
+        }
+
         buffer.bytes = (uint8_t *)&tx_pkt;
-        buffer.n = sizeof(tx_pkt);
+        buffer.n = current_payload_size;
 
         // 1. Send Probe
         if (sendUdp(local, remote, &buffer) != (int)buffer.n)
