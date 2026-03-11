@@ -13,6 +13,7 @@
 #include <time.h>
 #include <sys/select.h>
 #include "UdpSocket.h"
+#include <errno.h>
 
 #define G_SRV_PORT ((uint16_t)24628) // use 'id -u' or getuid(2)
 #define TIMER ((uint32_t)20 * 60)    // 20 min
@@ -20,13 +21,14 @@
 #define ERROR_OR_CORRUPT ((u_int32_t) -1)
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 #define SMALL_SIZE 1
-#define LARGE_SIZE 1000
+#define LARGE_SIZE 1300
 
 typedef struct
 {
     uint32_t seq_num;
     struct timespec send_ts;
     uint32_t probe_magic_val; // to check whether we received our own packet
+    char size_buffer[LARGE_SIZE];
 } ProbePacket_t;
 
 int get_udp_response(UdpSocket_t *local,
@@ -120,7 +122,7 @@ int main(int argc, char *argv[])
 
         int r = get_udp_response(local, remote, &rx_buffer, 1000);
 
-        if (r == (int)sizeof(ProbePacket_t) && rx_pkt.probe_magic_val == 0xDEADBEEF)
+        if (r == (int)current_payload_size && rx_pkt.probe_magic_val == 0xDEADBEEF) 
         {
             struct timespec recv_ts;
             clock_gettime(CLOCK_MONOTONIC, &recv_ts);
