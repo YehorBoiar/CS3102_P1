@@ -8,6 +8,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <stddef.h>
 
 #include <poll.h>
 #include <time.h>
@@ -48,6 +49,7 @@ int get_udp_response(UdpSocket_t *local,
     if (ready == 0)
         return LOST;
 
+    fprintf(stderr, "poll() system error: %s\n", strerror(errno));
     return ERROR_OR_CORRUPT;
 }
 
@@ -100,11 +102,13 @@ int main(int argc, char *argv[])
         tx_pkt.probe_magic_val = 0xDEADBEEF;
         clock_gettime(CLOCK_MONOTONIC, &tx_pkt.send_ts);
 
+        size_t header_size = offsetof(ProbePacket_t, size_buffer);
         size_t current_payload_size;
+        
         if (counter % 2 == 0) {
-            current_payload_size = sizeof(uint32_t) + sizeof(struct timespec) + sizeof(uint32_t) + SMALL_SIZE;
+            current_payload_size = header_size + SMALL_SIZE;
         } else {
-            current_payload_size = sizeof(uint32_t) + sizeof(struct timespec) + sizeof(uint32_t) + LARGE_SIZE;
+            current_payload_size = header_size + LARGE_SIZE;
         }
 
         buffer.bytes = (uint8_t *)&tx_pkt;
@@ -122,7 +126,7 @@ int main(int argc, char *argv[])
 
         int r = get_udp_response(local, remote, &rx_buffer, 1000);
 
-        if (r == (int)current_payload_size && rx_pkt.probe_magic_val == 0xDEADBEEF) 
+        if (r == (int)current_payload_size && rx_pkt.probe_magic_val == 0xDEADBEEF)
         {
             struct timespec recv_ts;
             clock_gettime(CLOCK_MONOTONIC, &recv_ts);
