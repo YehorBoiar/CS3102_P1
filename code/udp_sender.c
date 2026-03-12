@@ -94,8 +94,7 @@ int main(int argc, char *argv[])
 
     printf("sequence_number,rtt_ms,bytes_received,status\n"); // csv header
 
-    while (counter < 1200)
-    { // 20 minutes @ 1 per second
+    while (counter < TIMER) { // 20 minutes @ 1 per second
 
         ProbePacket_t tx_pkt, rx_pkt;
         tx_pkt.seq_num = counter;
