@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
         fflush(stdout);
         counter++;
-        // sleep(1);
+        sleep(1);
     }
 
     closeUdp(local);

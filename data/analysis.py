@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-FULLPE_DATA = 'var_data.csv'
-NOFULLPE_DATA = 'var_nofullpe_data.csv'
+FULLPE_DATA = 'data/fullpe_data.csv'
+NOFULLPE_DATA = 'data/nofullpe_data.csv'
 
 def load_and_correct_data(fullpe_path, baseline_path):
     # Load both datasets
