@@ -22,7 +22,7 @@
 #define ERROR_OR_CORRUPT ((u_int32_t) -1)
 #define ERROR(_s) fprintf(stderr, "%s\n", _s)
 #define SMALL_SIZE 0
-#define LARGE_SIZE 1300
+#define LARGE_SIZE 1372
 
 typedef struct
 {

@@ -1,7 +1,7 @@
 import pandas as pd
 
 # 1. Load the data and filter for successful probes
-df = pd.read_csv('var_data.csv')
+df = pd.read_csv('data/fullpe_data.csv')
 df = df[df['status'] == 'SUCCESS']
 
 # 2. Separate into small (even) and large (odd) packet groups
@@ -21,7 +21,7 @@ median_rtt_large = df_large['rtt_ms'].median() / 1000.0
 b = (size_large - size_small) * 8
 
 # Calculate one-way delay difference
-T_d_path = (median_rtt_large - median_rtt_small) / 2
+T_d_path = (median_rtt_large - median_rtt_small)
 
 # Assume local transmission delay (e.g., local 1 Gbps link)
 T_x = b / 1e9

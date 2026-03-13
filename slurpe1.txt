@@ -1,0 +1,14 @@
+yb33@pc1-007-l:~/Documents/CS3102/coursework1 $ ./slurpe-5 rx fullpe pc1-008-l pc1-008-l
+** path emulation **
+pe_seed: 24628 (unix uid)
+delay:   30 ms (30000000 ns)
+loss:    10 % (P{loss})
+rate:    16 Mbps
+ns_byte: 500 ns
+** ---- **** ---- **
+
+** slurpe running with PID 248371 ...
+** flags: rx=on fullpe=on hexdump=off delay=on loss=on rate=on
+** hostinfo: pc1-008-l (138.251.28.252) | pc1-008-l (138.251.28.252) | port=24628
+** configuration: max_msg_size=1400 bytes | max_q_size=128 packets
+
