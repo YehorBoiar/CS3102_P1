@@ -20,14 +20,19 @@ def load_and_correct_data(fullpe_path, baseline_path):
     # Reindex to ensure alignment
     full_range = range(0, 1201)
     df_f = df_f.set_index('sequence_number').reindex(full_range).reset_index()
-    df_b = df_b.set_index('sequence_number').reindex(full_range).reset_index()
-
-    # Create the "Corrected" RTT column
-    # We subtract the full baseline RTT from the fullpe RTT
-    df_f['rtt_corrected'] = df_f['rtt_ms'] - df_b['rtt_ms']
     
     # Categorize packet sizes
     df_f['packet_type'] = np.where(df_f['sequence_number'] % 2 == 0, 'Small', 'Large')
+    
+    med_base_small = df_b[df_b['sequence_number'] % 2 == 0]['rtt_ms'].median()
+    med_base_large = df_b[df_b['sequence_number'] % 2 != 0]['rtt_ms'].median()
+
+    # Subtract the corresponding baseline scalar from the emulated RTT
+    df_f['rtt_corrected'] = np.where(
+        df_f['packet_type'] == 'Small',
+        df_f['rtt_ms'] - med_base_small,
+        df_f['rtt_ms'] - med_base_large
+    )
     
     return df_f
 
