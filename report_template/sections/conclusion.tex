@@ -1,7 +1,7 @@
 \section{Conclusion}
 
-This experiment measured the packet loss, delay, and end-to-end data rate of a network path using probe packets and RTT-based analysis. The measured loss rate of \textbf{9.83\%} closely matched the emulator's configured 10\% packet loss probability, indicating that the probing method accurately captured random packet drops.
+This experiment used active probing to estimate packet loss, delay, and end-to-end data rate on an emulated network path. The measured loss rate of \textbf{9.83\%} closely matched the configured 10\% packet loss probability, indicating that the probing approach successfully captured the stochastic packet drop behaviour introduced by the emulator.
 
-The observed median RTT values of approximately \textbf{32\,ms} were also consistent with the emulator's configured delay of roughly 30\,ms. This suggests that the probing approach provides a reliable estimate of end-to-end delay under the given experimental conditions.
+The measured RTT values were centred around \textbf{32\,ms}, which is consistent with the approximate 30\,ms delay configured in the path emulator. Visual analysis of the RTT measurements showed that delays remained stable throughout the experiment, with only occasional higher RTT samples and randomly distributed packet losses.
 
-Using the difference in RTT between small and large probes, the end-to-end data rate was estimated to be \textbf{21.39\,Mbps}. Although this value slightly exceeds the expected upper bound of 20\,Mbps specified for the emulator, it remains of the same order of magnitude and likely reflects measurement noise and simplifying assumptions in the RTT-based estimation method.
+The end-to-end data rate was estimated using the difference in RTT between small and large probe packets, yielding a capacity estimate of \textbf{21.39\,Mbps}. Although this value slightly exceeds the expected upper bound of 20\,Mbps specified for the emulator, it remains close to the configured rate and likely reflects measurement noise and simplifying assumptions in the RTT-based estimation method.

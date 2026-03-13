@@ -4,7 +4,7 @@
 The following assumptions are made regarding the data collection and subsequent analysis:
 \begin{itemize}
     \item \textbf{Negligible Processing Delay:} The turnaround time for the remote server to process and echo the probe packet is assumed to be near-zero and negligible compared to the network RTT.
-    \item \textbf{Fixed Protocol Overhead:} Network framing overhead is assumed to be exactly 42 bytes (14 bytes Ethernet, 20 bytes IPv4, 8 bytes UDP; see Figure~\ref{fig:protocol_headers_app}) without optional headers, resulting in a constant 74-byte physical frame.
+    \item \textbf{Fixed Protocol Overhead:} Each probe packet incurs a constant protocol overhead consisting of a 14-byte Ethernet header, a 20-byte IPv4 header, and an 8-byte UDP header (see Figure~\ref{fig:protocol_headers_app}). Assuming no optional headers, this results in a total fixed overhead of 42 bytes added to the UDP payload.
     \item \textbf{Strict Timeout Threshold:} Probe packets that exceed the 1000\,ms polling timeout are classified strictly as lost, rather than severely delayed.
     \item \textbf{Constant Transmission Rate:} The sending interval is assumed to be precisely 1.0 second, ignoring any minor OS scheduling drift introduced by the \texttt{sleep(1)} call in the sender loop.
     \item \textbf{Symmetric Baseline Path:} The baseline network delay (measured without the \texttt{fullpe} emulation flag) is assumed to be symmetric. The one-way baseline delay to the reflector is exactly half of the measured non-emulated median RTT.
@@ -67,3 +67,36 @@ Estimated Data Rate: 21.39 Mbps
 \end{verbatim}
 
  While slightly higher than the expected upper bound of 20\,Mbps specified for the emulator, the estimate remains close to the configured rate and is likely explained by measurement noise and the simplifying assumptions used in the RTT-differencing method.
+
+\textit{(The RTT-differencing technique provides an approximate estimate of path capacity and may be influenced by factors such as queueing effects, measurement noise, and simplifying assumptions regarding path symmetry.)}
+
+\subsection{RTT Behaviour and Stability}
+
+To further examine the behaviour of the emulated path, several visualisations of the corrected RTT measurements were generated.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{res/1_scatter_loss_corrected.png}
+\caption{Corrected RTT over time for small and large probes. Lost packets are marked with red crosses.}
+\label{fig:rtt_scatter}
+\end{figure}
+
+Figure~\ref{fig:rtt_scatter} shows the corrected RTT values for all probes across the experiment. Most RTT measurements cluster tightly around 31--33\,ms, indicating a stable baseline delay introduced by the path emulator. The red markers represent lost packets, which appear intermittently throughout the experiment and visually confirm the approximately 10\% packet loss probability configured in the emulator.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{res/2_boxplots_corrected.png}
+\caption{Distribution of corrected RTT values in 60-second bins.}
+\label{fig:rtt_boxplots}
+\end{figure}
+
+To evaluate delay stability over time, the RTT measurements were grouped into 60-second bins and visualised using boxplots (Figure~\ref{fig:rtt_boxplots}). The median RTT within each bin remains relatively consistent throughout the experiment, suggesting that the emulated delay is stable over time. As expected, the RTT for large packets is consistently slightly higher than for small packets due to additional serialization delay.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{res/3_cdf_corrected.png}
+\caption{CDF of corrected RTT values for small and large probes.}
+\label{fig:rtt_cdf}
+\end{figure}
+
+Figure~\ref{fig:rtt_cdf} shows the cumulative distribution functions (CDFs) of corrected RTT measurements. The distributions for small and large probes are closely aligned, with the large-packet curve slightly shifted to the right. The median RTT values of approximately 31.9\,ms (small) and 32.4\,ms (large) correspond to the values used in the capacity estimation described in the previous section.
