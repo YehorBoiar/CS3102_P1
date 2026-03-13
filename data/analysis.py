@@ -3,136 +3,101 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-SMOL_DATA = 'data/data.csv'
+FULLPE_DATA = 'var_data.csv'
+NOFULLPE_DATA = 'var_nofullpe_data.csv'
 
-def load_data(data_filename):
-    df = pd.read_csv(data_filename) 
+def load_and_correct_data(fullpe_path, baseline_path):
+    # Load both datasets
+    df_f = pd.read_csv(fullpe_path)
+    df_b = pd.read_csv(baseline_path)
     
-    # make all LOST rows to be NAN
-    df['sequence_number'] = pd.to_numeric(df['sequence_number'], errors='coerce')
-    
-    # drop nan rows
-    df = df.dropna(subset=['sequence_number'])
-    df['sequence_number'] = df['sequence_number'].astype(int)
+    # Standardize sequence numbers
+    for d in [df_f, df_b]:
+        d['sequence_number'] = pd.to_numeric(d['sequence_number'], errors='coerce')
+        d.dropna(subset=['sequence_number'], inplace=True)
+        d['sequence_number'] = d['sequence_number'].astype(int)
 
-    # reindex to get a dataset with clean consequitive indexation
+    # Reindex to ensure alignment
     full_range = range(0, 1201)
-    df = df.set_index('sequence_number').reindex(full_range).reset_index()
+    df_f = df_f.set_index('sequence_number').reindex(full_range).reset_index()
+    df_b = df_b.set_index('sequence_number').reindex(full_range).reset_index()
 
-    return df
-
-def get_stats(df):
-    total_sent = len(df)
-    lost_packets = df[df['rtt_ms'].isna()]
-    valid_packets = df[df['rtt_ms'].notna()]
+    # Create the "Corrected" RTT column
+    # We subtract the full baseline RTT from the fullpe RTT
+    df_f['rtt_corrected'] = df_f['rtt_ms'] - df_b['rtt_ms']
     
-    loss_rate = (len(lost_packets) / total_sent) * 100
+    # Categorize packet sizes
+    df_f['packet_type'] = np.where(df_f['sequence_number'] % 2 == 0, 'Small', 'Large')
     
-    # Precision (absolute difference between consecutive RTTs)
-    df['precision'] = df['rtt_ms'].diff().abs()
+    return df_f
 
-    # Application Throughput Calculation
-    # 74 bytes = 32b payload + 8b UDP + 20b IP + 14b Ethernet
-    # NOTE: To reference!!!
-    valid_count = len(valid_packets)
-    duration_secs = df['sequence_number'].max() if total_sent > 0 else 1
-    throughput_bps = (valid_count * 74 * 8) / duration_secs
-
-    stats = {
-        'total_sent': total_sent,
-        'total_lost': len(lost_packets),
-        'loss_rate': loss_rate,
-        'avg_precision': df['precision'].mean(),
-        'avg_rtt': valid_packets['rtt_ms'].mean(),
-        'median_rtt': valid_packets['rtt_ms'].median(),
-        'p95_rtt': valid_packets['rtt_ms'].quantile(0.95),
-        'max_rtt': valid_packets['rtt_ms'].max(),
-        'min_rtt': valid_packets['rtt_ms'].min(),
-        'throughput_bps': throughput_bps
-    }
-
-    return stats
-
-def plot_scatter_loss(df, stats):
-    valid = df[df['rtt_ms'].notna()]
-    lost = df[df['rtt_ms'].isna()]
-
+def plot_scatter_loss(df):
     plt.figure(figsize=(12, 6))
     
-    # Valid RTTs
-    plt.scatter(valid['sequence_number'], valid['rtt_ms'], 
-                s=10, c='blue', alpha=0.5, label='Valid RTT')
+    # Note: Using rtt_corrected now
+    small_valid = df[(df['rtt_corrected'].notna()) & (df['packet_type'] == 'Small')]
+    large_valid = df[(df['rtt_corrected'].notna()) & (df['packet_type'] == 'Large')]
+    lost = df[df['rtt_ms'].isna()]
+
+    plt.scatter(small_valid['sequence_number'], small_valid['rtt_corrected'], 
+                s=10, c='blue', alpha=0.5, label='Corrected RTT (Small)')
+    plt.scatter(large_valid['sequence_number'], large_valid['rtt_corrected'], 
+                s=10, c='green', alpha=0.5, label='Corrected RTT (Large)')
     
-    # Lost Packets (Red X)
+    # Mark loss at 0 on the Y-axis
     plt.scatter(lost['sequence_number'], [0] * len(lost), 
                 s=30, c='red', marker='x', label='Packet Loss')
 
-    plt.title(f"RTT Trace (Loss: {stats['loss_rate']:.2f}%, Precision: {stats['avg_precision']:.2f}ms)")
+    plt.title('Corrected RTT (Emulation Delay Only) over Time')
     plt.xlabel('Sequence Number')
-    plt.ylabel('RTT (ms)')
+    plt.ylabel('Corrected RTT (ms)')
     plt.legend()
     plt.grid(True, alpha=0.3)
-    plt.savefig('1_scatter_loss.png')
+    plt.savefig('1_scatter_loss_corrected.png')
     plt.show()
 
 def plot_binned_boxplots(df, bin_size=60):
-    df = df.copy()
-    df = df[df['rtt_ms'].notna()]
-    
-    df['time_bin'] = (df['sequence_number'] // bin_size).astype(int)
+    df_plot = df[df['rtt_corrected'].notna()].copy()
+    df_plot['time_bin'] = (df_plot['sequence_number'] // bin_size).astype(int)
 
     plt.figure(figsize=(12, 6))
-    sns.boxplot(x='time_bin', y='rtt_ms', data=df,
-                color='lightblue', showfliers=False)
+    sns.boxplot(x='time_bin', y='rtt_corrected', hue='packet_type', data=df_plot,
+                palette={'Small': 'lightblue', 'Large': 'lightgreen'}, showfliers=False)
 
-    plt.title(f'RTT Stability over Time ({bin_size}s Bins)')
-    plt.xlabel(f'Time Bin ({bin_size}s)')
-    plt.ylabel('RTT (ms)')
+    plt.title(f'Corrected RTT Stability ({bin_size}s Bins)')
+    plt.xlabel('Time Bin')
+    plt.ylabel('Corrected RTT (ms)')
+    plt.legend(title='Packet Size')
     plt.grid(True, alpha=0.3)
-    plt.savefig('2_boxplots_stability.png')
+    plt.savefig('2_boxplots_corrected.png')
+    plt.show()
 
 def plot_cdf(df):
-    valid_rtt = df['rtt_ms'].dropna().sort_values()
-    yvals = np.arange(len(valid_rtt)) / float(len(valid_rtt) - 1)
-
     plt.figure(figsize=(8, 6))
-    plt.plot(valid_rtt, yvals, marker='.', linestyle='none', markersize=2)
+
+    for p_type, color in [('Small', 'blue'), ('Large', 'green')]:
+        valid_rtt = df[df['packet_type'] == p_type]['rtt_corrected'].dropna().sort_values()
+        yvals = np.arange(len(valid_rtt)) / float(len(valid_rtt) - 1)
+
+        plt.plot(valid_rtt, yvals, marker='.', linestyle='none', markersize=2, 
+                 color=color, label=f'{p_type} Packets')
+        
+        median_val = valid_rtt.median()
+        plt.axvline(median_val, color=color, linestyle='--', alpha=0.7, 
+                    label=f'Med {p_type}: {median_val:.2f}ms')
     
-    # Add median line
-    median_rtt = valid_rtt.median()
-    plt.axvline(median_rtt, color='r', linestyle='--', label=f'Median: {median_rtt}ms')
-    
-    plt.title('CDF of Round Trip Time')
-    plt.xlabel('RTT (ms)')
+    plt.title('CDF of Corrected Round Trip Time')
+    plt.xlabel('Corrected RTT (ms)')
     plt.ylabel('Probability')
     plt.grid(True)
     plt.legend()
-    plt.savefig('3_cdf_plot.png')
+    plt.savefig('3_cdf_corrected.png')
     plt.show()
 
-# --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    df = load_data(SMOL_DATA)
+    # Load using both files to perform the subtraction
+    df = load_and_correct_data(FULLPE_DATA, NOFULLPE_DATA)
 
-    stats = get_stats(df)
-
-    print("="*40)
-    print(f"Network Trace Analysis Report")
-    print("="*40)
-    print(f"Total Sent:     {stats['total_sent']}")
-    print(f"Total Lost:     {stats['total_lost']} ({stats['loss_rate']:.2f}%)")
-
-    print("-" * 20)
-    print(f"RTT Min/Max:    {stats['min_rtt']:.2f} ms / {stats['max_rtt']:.2f} ms")
-    print(f"Avg RTT:        {stats['avg_rtt']:.2f} ms")
-    print(f"Median RTT:     {stats['median_rtt']:.2f} ms")
-    print(f"95th Pctl RTT:  {stats['p95_rtt']:.2f} ms")
-    print(f"Avg Precision:  {stats['avg_precision']:.2f} ms")
-    print(f"Throughput:     {stats['throughput_bps']:.2f} bps")
-    print("="*40)
-
-
-    # # 3. Generate Plots
-    plot_scatter_loss(df, stats)
+    plot_scatter_loss(df)
     plot_binned_boxplots(df)
     plot_cdf(df)
