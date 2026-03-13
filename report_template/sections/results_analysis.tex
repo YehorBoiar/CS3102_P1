@@ -1,2 +1,19 @@
 \section{Results Analysis}
 
+\subsection{Experimental Assumptions}
+The following assumptions are made regarding the data collection and subsequent analysis:
+\begin{itemize}
+    \item \textbf{Negligible Processing Delay:} The turnaround time for the remote server to process and echo the probe packet is assumed to be near-zero and negligible compared to the network RTT.
+    \item \textbf{Fixed Protocol Overhead:} Network framing overhead is assumed to be exactly 42 bytes (14 bytes Ethernet, 20 bytes IPv4, 8 bytes UDP; see Figure~\ref{fig:protocol_headers_app}) without optional headers, resulting in a constant 74-byte physical frame.
+    \item \textbf{Strict Timeout Threshold:} Probe packets that exceed the 1000\,ms polling timeout are classified strictly as lost, rather than severely delayed.
+    \item \textbf{Constant Transmission Rate:} The sending interval is assumed to be precisely 1.0 second, ignoring any minor OS scheduling drift introduced by the \texttt{sleep(1)} call in the sender loop.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.32\textwidth]{res/IEEE802.png} \hfill
+    \includegraphics[width=0.32\textwidth]{res/RFC791.png} \hfill
+    \includegraphics[width=0.32\textwidth]{res/RFC768.png}
+    \caption{Standard header formats establishing overhead sizes: \href{https://www.firewall.cx/networking/ethernet/ieee-8023-frame.html}{IEEE 802.3 Ethernet} (left), \href{https://datatracker.ietf.org/doc/html/rfc791}{IPv4 RFC 791} (center), and \href{https://datatracker.ietf.org/doc/html/rfc768}{UDP RFC 768} (right).}
+    \label{fig:protocol_headers_app}
+\end{figure}
