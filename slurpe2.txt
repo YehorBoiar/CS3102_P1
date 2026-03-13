@@ -1,0 +1,9 @@
+yb33@pc1-007-l:~/Documents/CS3102/coursework1 $ ./slurpe-5 rx pc1-008-l pc1-008-l
+** path emulation **
+pe_seed: 0 (unix uid)
+delay:   0 ms (0 ns)
+loss:    0 % (P{loss})
+rate:    0 Mbps
+ns_byte: 0 ns
+** ---- **** ---- **
+
