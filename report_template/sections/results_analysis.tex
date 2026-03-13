@@ -7,6 +7,7 @@ The following assumptions are made regarding the data collection and subsequent 
     \item \textbf{Fixed Protocol Overhead:} Network framing overhead is assumed to be exactly 42 bytes (14 bytes Ethernet, 20 bytes IPv4, 8 bytes UDP; see Figure~\ref{fig:protocol_headers_app}) without optional headers, resulting in a constant 74-byte physical frame.
     \item \textbf{Strict Timeout Threshold:} Probe packets that exceed the 1000\,ms polling timeout are classified strictly as lost, rather than severely delayed.
     \item \textbf{Constant Transmission Rate:} The sending interval is assumed to be precisely 1.0 second, ignoring any minor OS scheduling drift introduced by the \texttt{sleep(1)} call in the sender loop.
+    \item \textbf{Symmetric Baseline Path:} The baseline network delay (measured without the \texttt{fullpe} emulation flag) is assumed to be symmetric. The one-way baseline delay to the reflector is exactly half of the measured non-emulated median RTT.
 \end{itemize}
 
 \begin{figure}[H]
@@ -17,3 +18,52 @@ The following assumptions are made regarding the data collection and subsequent 
     \caption{Standard header formats establishing overhead sizes: \href{https://www.firewall.cx/networking/ethernet/ieee-8023-frame.html}{IEEE 802.3 Ethernet} (left), \href{https://datatracker.ietf.org/doc/html/rfc791}{IPv4 RFC 791} (center), and \href{https://datatracker.ietf.org/doc/html/rfc768}{UDP RFC 768} (right).}
     \label{fig:protocol_headers_app}
 \end{figure}
+
+\subsection{Loss, Delay, and End-to-End Data Rate}
+
+To adhere to Requirement 2, the packet loss, end-to-end delay, and data rate of the emulated path were estimated from the collected probe data.
+
+\paragraph{Packet Loss}
+
+Packet loss was calculated as the proportion of probes that did not receive a reply within the 1000\,ms timeout window. These probes appear in the dataset with missing RTT values and were classified as lost. The loss rate is therefore
+
+\[
+\text{Loss Rate} = \frac{\text{Lost Probes}}{\text{Total Probes}} \times 100
+\]
+
+which gave a loss rate of \textbf{9.83\%}, closely matching the configured 10\% loss probability in the emulator.
+
+\paragraph{End-to-End Delay}
+
+To estimate delay, the median round-trip time (RTT) was computed separately for small and large probes. Using the median reduces the influence of occasional outliers or delayed packets.
+
+A baseline RTT was also measured without path emulation. Half of this value was subtracted from the measured RTTs to remove the underlying symmetric network delay and isolate the delay introduced by the emulator. The resulting corrected RTT values were:
+
+\begin{verbatim}
+Median RTT Small: 31.99 ms
+Median RTT Large: 32.51 ms
+\end{verbatim}
+
+These values closely match the emulator's configured delay of approximately 30\,ms.
+
+\paragraph{End-to-End Data Rate}
+
+The end-to-end data rate was estimated by comparing the RTT difference between large and small probes. Since the two probe sizes differ only in payload length, the additional RTT observed for larger probes corresponds to the additional serialization delay at the bottleneck link.
+
+First, the difference in packet size was computed including the assumed protocol overhead (14 bytes Ethernet, 20 bytes IPv4, and 8 bytes UDP). This yielded the additional number of transmitted bits between the large and small probes.
+
+Next, the difference in corrected RTT between large and small probes was calculated to estimate the extra transmission delay introduced by the larger packet. The end-to-end data rate was then computed as
+
+\[
+R = \frac{\Delta \text{bits}}{\Delta T}
+\]
+
+where $\Delta \text{bits}$ is the size difference between the probes and $\Delta T$ is the corresponding RTT difference.
+
+This procedure produced an estimated data rate of:
+
+\begin{verbatim}
+Estimated Data Rate: 21.39 Mbps
+\end{verbatim}
+
+ While slightly higher than the expected upper bound of 20\,Mbps specified for the emulator, the estimate remains close to the configured rate and is likely explained by measurement noise and the simplifying assumptions used in the RTT-differencing method.

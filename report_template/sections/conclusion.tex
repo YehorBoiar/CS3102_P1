@@ -1,3 +1,7 @@
 \section{Conclusion}
 
-This report detailed the use of a custom UDP probe to analyze an emulated network path across two experiments. In the first experiment, the RTT exhibited a bimodal pattern with a stable baseline latency around 30 ms and occasional queueing spikes exceeding 290 ms. Packet loss reached 11.7\%, occurring fairly consistently throughout the 20-minute run. A secondary variable-packet-size experiment estimated the actual bottleneck capacity to be 15.51 Mbps, which aligns well with the expected 20 Mbps limit.
+This experiment measured the packet loss, delay, and end-to-end data rate of a network path using probe packets and RTT-based analysis. The measured loss rate of \textbf{9.83\%} closely matched the emulator's configured 10\% packet loss probability, indicating that the probing method accurately captured random packet drops.
+
+The observed median RTT values of approximately \textbf{32\,ms} were also consistent with the emulator's configured delay of roughly 30\,ms. This suggests that the probing approach provides a reliable estimate of end-to-end delay under the given experimental conditions.
+
+Using the difference in RTT between small and large probes, the end-to-end data rate was estimated to be \textbf{21.39\,Mbps}. Although this value slightly exceeds the expected upper bound of 20\,Mbps specified for the emulator, it remains of the same order of magnitude and likely reflects measurement noise and simplifying assumptions in the RTT-based estimation method.

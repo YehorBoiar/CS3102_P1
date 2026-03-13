@@ -1,16 +1,18 @@
 \section{Probe Protocol Design}
 
-Sends 32 byte packets built with C \texttt{struct}.
+Sends 28 to 1400 byte packets built with C \texttt{struct}.
 
-The packet is composed of three fields:
+The packet is composed of four fields:
 \begin{itemize}
     \item \textbf{Sequence Number (\texttt{seq\_num}, 4 bytes):} Transmitted probe index. This allows the application to accurately track packet loss and detect any out-of-order delivery.
     
-    \item \textbf{Timestamp (\texttt{send\_ts}, 16 bytes):} Records the departure time using \texttt{CLOCK\_MONOTONIC}. Embedding the transmit time directly in the payload enables precise Round Trip Time (RTT) calculation upon reflection, minimizing the impact of local OS scheduling delays that could've occured if we were to timestamp the packet only in userspace after transmission or rely solely on post-receive timing measurements.
-    
+    \item \textbf{Timestamp (\texttt{send\_ts}, 16 bytes):} Records the departure time using \texttt{CLOCK\_MONOTONIC}. Embedding the transmit time directly in the payload enables precise Round Trip Time (RTT) calculation upon reflection, minimizing the impact of local OS scheduling delays that could've occurred if we were to timestamp the packet only in userspace after transmission or rely solely on post-receive timing measurements. 
+
+    \item \textbf{Size Buffer (\texttt{size\_buffer}, 0 or 1372 bytes):} A character array used as padding to dynamically vary the overall size of the transmitted packet.
+
     \item \textbf{Magic Number (\texttt{probe\_magic\_val}, 4 bytes):} A static hexadecimal identifier (\texttt{0xDEADBEEF}) used for application-layer validation. Although the operating system already demultiplexes UDP traffic based on port number, this identifier provides an additional layer of verification. 
 
     Consider a scenario where another process (or a misconfigured script) sends arbitrary UDP data to the same listening port. The kernel will still deliver that datagram to the application, as it matches the port number. Without validating the magic number, the program could mistakenly interpret the payload as a legitimate probe response and compute an invalid RTT. While this situation is unlikely in the controlled coursework environment where only the reflector is expected to respond, including a magic value provides defensive robustness and ensures the application processes only correctly structured probe packets.
 \end{itemize}
 
-\textit{Note: The remaining 8 bytes of the 32-byte total consist of memory padding added by the C compiler to correctly align the 16-byte \texttt{timespec} structure in memory.}
+\textit{(Note: The C compiler automatically inserts 4 bytes of memory padding immediately before this field for 64-bit alignment, bringing the base header size to exactly 28 bytes).}

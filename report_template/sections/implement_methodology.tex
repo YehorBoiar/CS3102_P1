@@ -1,6 +1,6 @@
 \section{Implementation and Experimental Methodology}
 
-The probe program was implemented using the provided code from the lecture week 3. The only part that I've reused were files: \textbf{UdpSocket.c/h}, and I took inspiration from \textbf{upd-client-2} that was reading a string from the terminal and sending that as a UDP packet of array of characters.
+The probe program was implemented using the provided code from the lecture week 3. The only part that I've reused were files: \textbf{UdpSocket.c/h}, and I took inspiration from \textbf{udp-client-2} that was reading a string from the terminal and sending that as a UDP packet of array of characters.
 
 \subsection{Transmission Control and Concurrency}
 The assignment asks for one probe per second and permits only one outstanding probe at any given time. To enforce this, the app uses \texttt{poll()} system call:
@@ -13,12 +13,50 @@ The assignment asks for one probe per second and permits only one outstanding pr
 \end{enumerate}
 
 \subsection{Data Collection Setup}
-I sent 1200 probes in $~20$ minutes of time. The sender was executed on \textbf{pc3-005-l}, targeting \texttt{slurpe-5} (running with the \texttt{--fullpe} flag) on \textbf{pc3-006-l}. 
 
-The program generates structured CSV output directly using \texttt{printf}. A CSV header is printed at startup, and each probe result is formatted in comma-separated form:
+Two datasets were collected.
+
+\subsubsection{\texttt{fullpe\_data.csv}}
+
+1200 probes were sent over approximately 20 minutes, with probe sizes alternating between 28 and 1400 bytes. The sender ran on \textbf{pc1-008-l}, targeting \texttt{slurpe-5} on \textbf{pc1-007-l} with the \texttt{fullpe} flag enabled.
+
+\begin{verbatim}
+yb33@pc1-007-l:~/Documents/CS3102/coursework1 $ ./slurpe-5 rx fullpe pc1-008-l pc1-008-l
+** path emulation **
+pe_seed: 24628 (unix uid)
+delay:   30 ms (30000000 ns)
+loss:    10 % (P{loss})
+rate:    16 Mbps
+ns_byte: 500 ns
+** ---- **** ---- **
+
+** slurpe running with PID 248371 ...
+** flags: rx=on fullpe=on hexdump=off delay=on loss=on rate=on
+** hostinfo: pc1-008-l (138.251.28.252) | pc1-008-l (138.251.28.252) | port=24628
+** configuration: max_msg_size=1400 bytes | max_q_size=128 packets
+\end{verbatim}
+
+The program outputs structured CSV data using \texttt{printf}. A header is printed at startup, and each probe result is written as a comma-separated record:
 
 \begin{verbatim}
 printf("sequence_number,rtt_ms,bytes_received,status\n");
 \end{verbatim}
 
-The resulting structured output was redirected to \texttt{data.csv} for analysis part.
+The output was redirected to \texttt{fullpe\_data.csv} for analysis.
+
+\subsubsection{\texttt{nofullpe\_data.csv}}
+
+A second dataset of 1200 probes was collected without path emulation. Probe sizes again alternated between 28 and 1400 bytes, with the sender on \textbf{pc1-008-l} and the receiver on \textbf{pc1-007-l}.
+
+\begin{verbatim}
+yb33@pc1-007-l:~/Documents/CS3102/coursework1 $ ./slurpe-5 rx pc1-008-l pc1-008-l
+** path emulation **
+pe_seed: 0 (unix uid)
+delay:   0 ms (0 ns)
+loss:    0 % (P{loss})
+rate:    0 Mbps
+ns_byte: 0 ns
+** ---- **** ---- **
+\end{verbatim}
+
+The output format was identical and saved as \texttt{nofullpe\_data.csv}.
